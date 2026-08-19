@@ -1,69 +1,202 @@
-import Image from "next/image";
+"use client";
+
+import React, { useState, useRef, useEffect } from "react";
+import { animate } from "animejs";
+import { extractColorsFromImage, ColorData } from "@/utils/colorExtractor";
+import Header from "@/components/Header";
+import UploadZone from "@/components/UploadZone";
+import InspectorView from "@/components/InspectorView";
+import PaletteGrid from "@/components/PaletteGrid";
+import BlurryLoader from "@/components/BlurryLoader";
+import GradientMaker from "@/components/GradientMaker";
 
 export default function Home() {
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [colors, setColors] = useState<ColorData[]>([]);
+  const [hoveredColor, setHoveredColor] = useState<ColorData | null>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [hideLowPresence, setHideLowPresence] = useState<boolean>(false);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [currentView, setCurrentView] = useState<"inspector" | "palette" | "gradient">("inspector");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+
+  const cardsContainerRef = useRef<HTMLDivElement>(null);
+
+  // Initialize theme from localStorage on client mount
+  useEffect(() => {
+    const storedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
+    if (storedTheme) {
+      setTheme(storedTheme);
+      document.documentElement.classList.toggle("dark", storedTheme === "dark");
+    } else {
+      setTheme("dark");
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleTheme = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const x = e.clientX;
+    const y = e.clientY;
+    document.documentElement.style.setProperty("--click-x", `${x}px`);
+    document.documentElement.style.setProperty("--click-y", `${y}px`);
+
+    const performToggle = () => {
+      const nextTheme = theme === "light" ? "dark" : "light";
+      setTheme(nextTheme);
+      localStorage.setItem("theme", nextTheme);
+      document.documentElement.classList.toggle("dark", nextTheme === "dark");
+    };
+
+    const doc = document as any;
+    if (doc.startViewTransition) {
+      doc.startViewTransition(performToggle);
+    } else {
+      performToggle();
+    }
+  };
+
+  // Filter thresholds logic
+  const maxPercentage = colors.length > 0 ? Math.max(...colors.map((c) => c.percentage)) : 0;
+  const dynamicThreshold = colors.length > 0
+    ? Math.max(3, Math.min(10, Math.round(maxPercentage * 0.15)))
+    : 10;
+
+  const displayedColors = hideLowPresence
+    ? colors.filter((color) => color.percentage >= dynamicThreshold)
+    : colors;
+
+  // Handle color extraction process
+  const processImage = async (src: string) => {
+    setIsProcessing(true);
+    setColors([]);
+    setHoveredColor(null);
+    setCurrentView("inspector");
+    
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    
+    try {
+      await delay(800);
+      const extracted = await extractColorsFromImage(src, "auto");
+      setColors(extracted);
+    } catch (error) {
+      console.error("Extraction error:", error);
+      alert("Failed to extract colors. Make sure it's a valid image file.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleFileSelect = (file: File) => {
+    if (!file || !file.type.startsWith("image/")) {
+      alert("Please select a valid image file.");
+      return;
+    }
+
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result && typeof e.target.result === "string") {
+        setImageSrc(e.target.result);
+        processImage(e.target.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleReset = () => {
+    const cards = document.querySelectorAll(".color-card");
+    const performReset = () => {
+      setImageSrc(null);
+      setColors([]);
+      setFileName(null);
+      setHideLowPresence(false);
+      setHoveredColor(null);
+      setCurrentView("inspector");
+    };
+
+    if (cards.length > 0 && currentView === "palette") {
+      animate(".color-card", {
+        opacity: [1, 0],
+        scale: [1, 0.9],
+        translateY: [0, 50],
+        duration: 300,
+        easing: "easeInQuad",
+      }).then(performReset);
+    } else {
+      performReset();
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="relative h-screen w-full flex flex-col justify-between overflow-hidden bg-theme-bg font-sans select-none transition-colors duration-300">
+      
+      {/* Background Image fixed layer */}
+      {imageSrc && (
+        <div
+          className={`fixed inset-0 z-0 bg-cover bg-center transition-all duration-1000 ${
+            isProcessing ? "blur-2xl scale-110 opacity-50" : "blur-none opacity-25"
+          }`}
+          style={{ backgroundImage: `url(${imageSrc})` }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      )}
+
+      {/* Shading gradient overlay layer */}
+      {imageSrc && (
+        <div className="fixed inset-0 z-10 bg-gradient-to-t from-theme-bg via-theme-bg/30 to-transparent pointer-events-none transition-colors duration-300" />
+      )}
+
+      {/* Spinner modal */}
+      <BlurryLoader isLoading={isProcessing} />
+
+      {/* Header controls toolbar */}
+      {imageSrc && colors.length > 0 && !isProcessing && (
+        <Header
+          fileName={fileName}
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          hideLowPresence={hideLowPresence}
+          setHideLowPresence={setHideLowPresence}
+          dynamicThreshold={dynamicThreshold}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          handleReset={handleReset}
+        />
+      )}
+
+      {/* View router contents */}
+      {!imageSrc ? (
+        /* View 1: Upload Dropzone screen */
+        <UploadZone
+          onFileSelect={handleFileSelect}
+          isDragging={isDragging}
+          setIsDragging={setIsDragging}
+        />
+      ) : colors.length > 0 && !isProcessing ? (
+        currentView === "inspector" ? (
+          /* View 2: Split screen pixel eyedropper inspector */
+          <InspectorView
+            imageSrc={imageSrc}
+            hoveredColor={hoveredColor}
+            setHoveredColor={setHoveredColor}
+            colors={colors}
+          />
+        ) : currentView === "palette" ? (
+          /* View 3: Dominant card listings layout */
+          <PaletteGrid
+            displayedColors={displayedColors}
+            dynamicThreshold={dynamicThreshold}
+            setHideLowPresence={setHideLowPresence}
+            cardsContainerRef={cardsContainerRef}
+          />
+        ) : (
+          /* View 4: Gradient maker screen */
+          <GradientMaker colors={colors} />
+        )
+      ) : (
+        /* Fallback idle state wrapper */
+        <div className="flex-1" />
+      )}
+    </main>
   );
 }

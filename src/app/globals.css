@@ -1,26 +1,85 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light Mode theme colors */
+  --background: #FFF9F5;
+  --surface: #FFFFFF;
+  --surface-variant: #F7ECE7;
+  --primary: #D94F4F;
+  --primary-container: #FFDAD6;
+  --secondary: #B86B00;
+  --secondary-container: #FFE0A8;
+  --text: #241A18;
+  --muted-text: #756B67;
+  --outline: #85736F;
+  --board: #FFFDFC;
+  --cell: #F4EEEB;
+  --called-cell: #D94F4F;
+  --bingo-complete: #387A4A;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  /* Dark Mode theme colors */
+  --background: #10131C;
+  --surface: #171B26;
+  --surface-variant: #242938;
+  --primary: #FF8A80;
+  --primary-container: #713338;
+  --secondary: #FFC15C;
+  --secondary-container: #5A4218;
+  --text: #F3F1F7;
+  --muted-text: #B8B9C5;
+  --outline: #8E909E;
+  --board: #171B26;
+  --cell: #202532;
+  --called-cell: #A94E4A;
+  --bingo-complete: #8BD49A;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --color-theme-bg: var(--background);
+  --color-theme-surface: var(--surface);
+  --color-theme-variant: var(--surface-variant);
+  --color-theme-primary: var(--primary);
+  --color-theme-primary-container: var(--primary-container);
+  --color-theme-secondary: var(--secondary);
+  --color-theme-secondary-container: var(--secondary-container);
+  --color-theme-txt: var(--text);
+  --color-theme-muted: var(--muted-text);
+  --color-theme-outline: var(--outline);
+  --color-theme-board: var(--board);
+  --color-theme-cell: var(--cell);
+  --color-theme-called-cell: var(--called-cell);
+  --color-theme-bingo-complete: var(--bingo-complete);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--background);
+  color: var(--text);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Poppy circular reveal theme transition using View Transitions API */
+::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  animation: reveal 650ms cubic-bezier(0.4, 0, 0.1, 1) both;
+  mix-blend-mode: normal;
+}
+
+@keyframes reveal {
+  from {
+    clip-path: circle(0px at var(--click-x, 90vw) var(--click-y, 5vh));
+  }
+  to {
+    /* Hypotenuse of typical screen to cover all corners from top-right */
+    clip-path: circle(150vmax at var(--click-x, 90vw) var(--click-y, 5vh));
+  }
 }
