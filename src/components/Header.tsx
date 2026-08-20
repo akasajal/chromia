@@ -50,48 +50,32 @@ export default function Header({
         </div>
 
         {/* Right Controls Area */}
-        <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto justify-end">
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-3 w-full md:w-auto justify-end">
           
-          {/* Top row on mobile: Presence toggle + Theme switch side-by-side */}
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            {/* Hide Low Presence Filter */}
-            <div
-              className={`flex-1 md:flex-initial flex items-center justify-between md:justify-start gap-3 bg-theme-variant/20 px-3 py-1.5 border border-theme-variant/30 rounded-xl text-theme-txt transition-all duration-300 ${
-                currentView !== "palette" ? "opacity-25 pointer-events-none select-none" : ""
+          {/* Hide Low Presence Filter */}
+          <div
+            className={`flex items-center justify-between md:justify-start gap-3 bg-theme-variant/20 px-3 py-1.5 border border-theme-variant/30 rounded-xl text-theme-txt transition-all duration-300 flex-1 md:flex-initial order-2 md:order-1 ${
+              currentView !== "palette" ? "opacity-25 pointer-events-none select-none" : ""
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Sliders className="w-3.5 h-3.5 text-theme-muted shrink-0" />
+              <span className="text-[9px] font-bold text-theme-muted uppercase tracking-wider select-none">
+                Hide Low Presence ({currentView === "palette" ? `<${dynamicThreshold}%` : "--%"})
+              </span>
+            </div>
+            <button
+              disabled={currentView !== "palette"}
+              onClick={() => setHideLowPresence(!hideLowPresence)}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                hideLowPresence && currentView === "palette" ? "bg-theme-primary" : "bg-theme-variant/60"
               }`}
             >
-              <div className="flex items-center gap-2">
-                <Sliders className="w-3.5 h-3.5 text-theme-muted shrink-0" />
-                <span className="text-[9px] font-bold text-theme-muted uppercase tracking-wider select-none">
-                  Hide Low Presence ({currentView === "palette" ? `<${dynamicThreshold}%` : "--%"})
-                </span>
-              </div>
-              <button
-                disabled={currentView !== "palette"}
-                onClick={() => setHideLowPresence(!hideLowPresence)}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  hideLowPresence && currentView === "palette" ? "bg-theme-primary" : "bg-theme-variant/60"
+              <span
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition duration-200 ease-in-out ${
+                  hideLowPresence && currentView === "palette" ? "translate-x-4" : "translate-x-0"
                 }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition duration-200 ease-in-out ${
-                    hideLowPresence && currentView === "palette" ? "translate-x-4" : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Theme Toggle Switch */}
-            <button
-              onClick={toggleTheme}
-              className="flex items-center justify-center p-2 rounded-xl bg-theme-variant/20 border border-theme-variant/30 text-theme-txt hover:bg-theme-variant/40 transition-all duration-200 cursor-pointer shrink-0"
-              title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
-            >
-              {theme === "light" ? (
-                <Moon className="w-4 h-4 text-theme-primary" />
-              ) : (
-                <Sun className="w-4 h-4 text-theme-secondary" />
-              )}
+              />
             </button>
           </div>
 
@@ -99,7 +83,7 @@ export default function Header({
           <div 
             className={`relative flex items-center bg-theme-variant/20 border border-theme-variant/30 p-1 rounded-xl shrink-0 select-none transition-all duration-300 w-full ${
               showGradientMaker ? "md:w-96" : "md:w-64"
-            }`}
+            } order-1 md:order-2`}
           >
             {/* Sliding coral background pill */}
             <div
@@ -157,6 +141,19 @@ export default function Header({
               </button>
             )}
           </div>
+
+          {/* Theme Toggle Switch */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center justify-center p-2 rounded-xl bg-theme-variant/20 border border-theme-variant/30 text-theme-txt hover:bg-theme-variant/40 transition-all duration-200 cursor-pointer shrink-0 order-3"
+            title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+          >
+            {theme === "light" ? (
+              <Moon className="w-4 h-4 text-theme-primary" />
+            ) : (
+              <Sun className="w-4 h-4 text-theme-secondary" />
+            )}
+          </button>
         </div>
 
       </div>
