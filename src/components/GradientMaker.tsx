@@ -278,18 +278,23 @@ export default function GradientMaker({ colors }: GradientMakerProps) {
     return isFlipped ? 100 - pos : pos;
   };
 
-  const handleDragStart = (id: string, part: "start" | "end" | "bar", e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleDragStart = (id: string, part: "start" | "end" | "bar", e: React.MouseEvent | React.TouchEvent) => {
+    if (e.cancelable) {
+      e.preventDefault();
+    }
     setSelectedBandId(id);
     setDraggingBandId(id);
     setDraggingPart(part);
+
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
 
     if (part === "bar" && cardRef.current) {
       const rect = cardRef.current.getBoundingClientRect();
       const w = rect.width;
       const h = rect.height;
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
+      const mx = clientX - rect.left;
+      const my = clientY - rect.top;
 
       const ratio = isHorizontal ? mx / w : my / h;
       const clickPercent = isFlipped ? (1 - ratio) * 100 : ratio * 100;
@@ -301,50 +306,67 @@ export default function GradientMaker({ colors }: GradientMakerProps) {
   };
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (clientX: number, clientY: number) => {
       if (!draggingBandId || !draggingPart || !cardRef.current) return;
       const rect = cardRef.current.getBoundingClientRect();
       const w = rect.width;
       const h = rect.height;
 
-      const mx = Math.max(0, Math.min(w, e.clientX - rect.left));
-      const my = Math.max(0, Math.min(h, e.clientY - rect.top));
+      const mx = Math.max(0, Math.min(w, clientX - rect.left));
+      const my = Math.max(0, Math.min(h, clientY - rect.top));
 
       const ratio = isHorizontal ? mx / w : my / h;
       const newPos = isFlipped ? Math.round((1 - ratio) * 100) : Math.round(ratio * 100);
 
       setBands((prev) =>
-          prev.map((band) => {
-            if (band.id !== draggingBandId) return band;
+        prev.map((band) => {
+          if (band.id !== draggingBandId) return band;
 
-            if (draggingPart === "start") {
-              return { ...band, start: Math.min(band.end, newPos) };
-            } else if (draggingPart === "end") {
-              return { ...band, end: Math.max(band.start, newPos) };
-            } else if (draggingPart === "bar") {
-              const bandWidth = band.end - band.start;
-              const targetStart = newPos - Math.round(dragStartOffset);
-              const clampedStart = Math.max(0, Math.min(100 - bandWidth, targetStart));
-              const clampedEnd = clampedStart + bandWidth;
-              return { ...band, start: clampedStart, end: clampedEnd };
-            }
-            return band;
-          })
+          if (draggingPart === "start") {
+            return { ...band, start: Math.min(band.end, newPos) };
+          } else if (draggingPart === "end") {
+            return { ...band, end: Math.max(band.start, newPos) };
+          } else if (draggingPart === "bar") {
+            const bandWidth = band.end - band.start;
+            const targetStart = newPos - Math.round(dragStartOffset);
+            const clampedStart = Math.max(0, Math.min(100 - bandWidth, targetStart));
+            const clampedEnd = clampedStart + bandWidth;
+            return { ...band, start: clampedStart, end: clampedEnd };
+          }
+          return band;
+        })
       );
     };
 
-    const handleMouseUp = () => {
+    const handleMouseMove = (e: MouseEvent) => {
+      handlePointerMove(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+        handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    const handlePointerUp = () => {
       setDraggingBandId(null);
       setDraggingPart(null);
     };
 
     if (draggingBandId) {
       window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("mouseup", handlePointerUp);
+      window.addEventListener("touchmove", handleTouchMove, { passive: false });
+      window.addEventListener("touchend", handlePointerUp);
     }
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mouseup", handlePointerUp);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handlePointerUp);
     };
   }, [draggingBandId, draggingPart, dragStartOffset, isHorizontal, isFlipped]);
 
@@ -388,7 +410,7 @@ export default function GradientMaker({ colors }: GradientMakerProps) {
                   <div key={band.id} className="absolute inset-0 overflow-visible pointer-events-none">
                     {/* Thick slideable color segment bar */}
                     <div
-                        className={`absolute rounded-full cursor-grab active:cursor-grabbing pointer-events-auto transition-all ${
+                        className={`absolute rounded-full cursor-grab active:cursor-grabbing pointer-events-auto transition-all touch-none ${
                             isHorizontal
                                 ? "top-1/2 -translate-y-1/2 h-[10px]"
                                 : "left-1/2 -translate-x-1/2 w-[10px]"
@@ -405,11 +427,12 @@ export default function GradientMaker({ colors }: GradientMakerProps) {
                           backgroundColor: band.color,
                         }}
                         onMouseDown={(e) => handleDragStart(band.id, "bar", e)}
+                        onTouchStart={(e) => handleDragStart(band.id, "bar", e)}
                     />
 
                     {/* S (Start) Knob */}
                     <div
-                        className={`absolute w-5 h-5 rounded-full bg-white flex items-center justify-center cursor-pointer pointer-events-auto border-2 transition-all hover:scale-110 shadow-md ${
+                        className={`absolute w-5 h-5 rounded-full bg-white flex items-center justify-center cursor-pointer pointer-events-auto border-2 transition-all hover:scale-110 shadow-md touch-none ${
                             isSelected ? "scale-110 z-40 border-[3px]" : "z-20 border-[2px]"
                         }`}
                         style={{
@@ -419,6 +442,7 @@ export default function GradientMaker({ colors }: GradientMakerProps) {
                           borderColor: band.color,
                         }}
                         onMouseDown={(e) => handleDragStart(band.id, "start", e)}
+                        onTouchStart={(e) => handleDragStart(band.id, "start", e)}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedBandId(band.id);
@@ -429,7 +453,7 @@ export default function GradientMaker({ colors }: GradientMakerProps) {
 
                     {/* E (End) Knob */}
                     <div
-                        className={`absolute w-5 h-5 rounded-full flex items-center justify-center cursor-pointer pointer-events-auto border border-white transition-all hover:scale-110 shadow-md ${
+                        className={`absolute w-5 h-5 rounded-full flex items-center justify-center cursor-pointer pointer-events-auto border border-white transition-all hover:scale-110 shadow-md touch-none ${
                             isSelected ? "scale-110 z-40 border-2" : "z-20"
                         }`}
                         style={{
@@ -439,6 +463,7 @@ export default function GradientMaker({ colors }: GradientMakerProps) {
                           backgroundColor: band.color,
                         }}
                         onMouseDown={(e) => handleDragStart(band.id, "end", e)}
+                        onTouchStart={(e) => handleDragStart(band.id, "end", e)}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedBandId(band.id);
@@ -463,7 +488,7 @@ export default function GradientMaker({ colors }: GradientMakerProps) {
             </div>
 
             {/* Scrollable settings area — no justify-between so no dead space */}
-            <div className="flex-1 flex flex-col gap-4 my-1 min-h-0 overflow-y-auto overflow-x-visible pr-1">
+            <div className="flex-1 flex flex-col gap-4 my-1 md:min-h-0 md:overflow-y-auto overflow-x-visible pr-1">
 
               {/* 1. Gradient Directions Grid */}
               <div className="flex flex-col gap-1.5 shrink-0">

@@ -50,19 +50,22 @@ export default function Header({
         </div>
 
         {/* Right Controls Area */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto justify-end">
+        <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto justify-end">
           
-          {/* Hide Low Presence Filter */}
-          <div
-            className={`flex items-center gap-3 bg-theme-variant/20 px-3 py-1.5 border border-theme-variant/30 rounded-xl w-full sm:w-auto text-theme-txt transition-all duration-300 ${
-              currentView !== "palette" ? "opacity-25 pointer-events-none select-none" : ""
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5 text-theme-muted shrink-0" />
-            <div className="flex items-center gap-2.5">
-              <span className="text-[9px] font-bold text-theme-muted uppercase tracking-wider select-none">
-                Hide Low Presence ({currentView === "palette" ? `<${dynamicThreshold}%` : "--%"})
-              </span>
+          {/* Top row on mobile: Presence toggle + Theme switch side-by-side */}
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* Hide Low Presence Filter */}
+            <div
+              className={`flex-1 md:flex-initial flex items-center justify-between md:justify-start gap-3 bg-theme-variant/20 px-3 py-1.5 border border-theme-variant/30 rounded-xl text-theme-txt transition-all duration-300 ${
+                currentView !== "palette" ? "opacity-25 pointer-events-none select-none" : ""
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Sliders className="w-3.5 h-3.5 text-theme-muted shrink-0" />
+                <span className="text-[9px] font-bold text-theme-muted uppercase tracking-wider select-none">
+                  Hide Low Presence ({currentView === "palette" ? `<${dynamicThreshold}%` : "--%"})
+                </span>
+              </div>
               <button
                 disabled={currentView !== "palette"}
                 onClick={() => setHideLowPresence(!hideLowPresence)}
@@ -77,12 +80,25 @@ export default function Header({
                 />
               </button>
             </div>
+
+            {/* Theme Toggle Switch */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center justify-center p-2 rounded-xl bg-theme-variant/20 border border-theme-variant/30 text-theme-txt hover:bg-theme-variant/40 transition-all duration-200 cursor-pointer shrink-0"
+              title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+            >
+              {theme === "light" ? (
+                <Moon className="w-4 h-4 text-theme-primary" />
+              ) : (
+                <Sun className="w-4 h-4 text-theme-secondary" />
+              )}
+            </button>
           </div>
 
           {/* Segment View Toggle Controls (Switches widths dynamically to prevent layout snaps) */}
           <div 
-            className={`relative flex items-center bg-theme-variant/20 border border-theme-variant/30 p-1 rounded-xl shrink-0 select-none transition-all duration-300 ${
-              showGradientMaker ? "w-96" : "w-64"
+            className={`relative flex items-center bg-theme-variant/20 border border-theme-variant/30 p-1 rounded-xl shrink-0 select-none transition-all duration-300 w-full ${
+              showGradientMaker ? "md:w-96" : "md:w-64"
             }`}
           >
             {/* Sliding coral background pill */}
@@ -104,53 +120,43 @@ export default function Header({
 
             <button
               onClick={() => setCurrentView("inspector")}
-              className={`relative z-10 flex-1 py-1 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors duration-300 cursor-pointer ${
+              className={`relative z-10 flex-1 py-1 rounded-lg text-[10px] xs:text-[11px] md:text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors duration-300 cursor-pointer ${
                 currentView === "inspector"
                   ? "text-theme-bg"
                   : "text-theme-muted hover:text-theme-txt"
               }`}
             >
               <ImageIcon className="w-3.5 h-3.5" />
-              Inspector View
+              <span className="hidden xs:inline">Inspector View</span>
+              <span className="xs:hidden">Inspector</span>
             </button>
             <button
               onClick={() => setCurrentView("palette")}
-              className={`relative z-10 flex-1 py-1 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors duration-300 cursor-pointer ${
+              className={`relative z-10 flex-1 py-1 rounded-lg text-[10px] xs:text-[11px] md:text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors duration-300 cursor-pointer ${
                 currentView === "palette"
                   ? "text-theme-bg"
                   : "text-theme-muted hover:text-theme-txt"
               }`}
             >
               <Sliders className="w-3.5 h-3.5" />
-              Palette View
+              <span className="hidden xs:inline">Palette View</span>
+              <span className="xs:hidden">Palette</span>
             </button>
             {showGradientMaker && (
               <button
                 onClick={() => setCurrentView("gradient")}
-                className={`relative z-10 flex-1 py-1 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors duration-300 cursor-pointer ${
+                className={`relative z-10 flex-1 py-1 rounded-lg text-[10px] xs:text-[11px] md:text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors duration-300 cursor-pointer ${
                   currentView === "gradient"
                     ? "text-theme-bg"
                     : "text-theme-muted hover:text-theme-txt"
                 }`}
               >
                 <Paintbrush className="w-3.5 h-3.5" />
-                Gradient Maker
+                <span className="hidden xs:inline">Gradient Maker</span>
+                <span className="xs:hidden">Gradient</span>
               </button>
             )}
           </div>
-
-          {/* Theme Toggle Switch */}
-          <button
-            onClick={toggleTheme}
-            className="flex items-center justify-center p-2 rounded-xl bg-theme-variant/20 border border-theme-variant/30 text-theme-txt hover:bg-theme-variant/40 transition-all duration-200 cursor-pointer shrink-0"
-            title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
-          >
-            {theme === "light" ? (
-              <Moon className="w-4 h-4 text-theme-primary" />
-            ) : (
-              <Sun className="w-4 h-4 text-theme-secondary" />
-            )}
-          </button>
         </div>
 
       </div>

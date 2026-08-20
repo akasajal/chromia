@@ -98,15 +98,15 @@ export default function InspectorView({
   }, [imageSrc]);
 
   // Canvas Eyedropper pixel detection & Zoom Loupe drawing
-  const handleMouseMove = (e: React.MouseEvent<HTMLImageElement>) => {
+  const updatePickedColor = (clientX: number, clientY: number) => {
     const img = imgRef.current;
     const canvas = hiddenCanvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!img || !canvas || !ctx) return;
 
     const rect = img.getBoundingClientRect();
-    const xRatio = (e.clientX - rect.left) / rect.width;
-    const yRatio = (e.clientY - rect.top) / rect.height;
+    const xRatio = (clientX - rect.left) / rect.width;
+    const yRatio = (clientY - rect.top) / rect.height;
 
     // Map ratios to hidden canvas dimensions
     const x = Math.max(0, Math.min(canvas.width - 1, Math.round(xRatio * canvas.width)));
@@ -190,6 +190,19 @@ export default function InspectorView({
     }
   };
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLImageElement>) => {
+    updatePickedColor(e.clientX, e.clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLImageElement>) => {
+    if (e.touches.length > 0) {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      updatePickedColor(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
   // WCAG relative luminance check for light/dark text choice
   const isLightColor = (rgb?: { r: number; g: number; b: number }) => {
     if (!rgb) return false;
@@ -208,13 +221,15 @@ export default function InspectorView({
     <div className="flex-1 w-full max-w-7xl mx-auto px-6 pb-6 pt-2 min-h-0 flex flex-col md:flex-row gap-6 relative z-20">
       
       {/* Left Panel: Fitted Image Container */}
-      <div className="flex-[3] border border-theme-variant/20 bg-theme-surface/35 rounded-3xl p-4 flex items-center justify-center overflow-hidden min-h-0 relative">
+      <div className="flex-[3] border border-theme-variant/20 bg-theme-surface/35 rounded-3xl p-4 flex items-center justify-center overflow-hidden min-h-[280px] sm:min-h-[400px] md:min-h-0 relative">
         <img
           ref={imgRef}
           src={imageSrc}
           onMouseMove={handleMouseMove}
+          onTouchStart={handleTouchMove}
+          onTouchMove={handleTouchMove}
           onMouseLeave={() => setHoveredColor(null)}
-          className="max-w-full max-h-full object-contain rounded-2xl border border-theme-variant/15 cursor-crosshair"
+          className="max-w-full max-h-full object-contain rounded-2xl border border-theme-variant/15 cursor-crosshair touch-none"
         />
       </div>
 
@@ -228,7 +243,7 @@ export default function InspectorView({
             <h4 className="text-[10px] text-theme-muted uppercase font-bold tracking-wider">Eyedropper Coordinates</h4>
           </div>
 
-          <div className="flex-1 flex flex-col justify-between my-1 min-h-0 overflow-y-auto pr-1">
+          <div className="flex-1 flex flex-col justify-between my-1 md:min-h-0 md:overflow-y-auto pr-1">
             <div className="flex flex-col gap-2.5">
               
               {/* Row 1: Zoom Block (Full Width of Card container) */}

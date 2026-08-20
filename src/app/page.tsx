@@ -129,7 +129,7 @@ export default function Home() {
   };
 
   return (
-    <main className="relative h-screen w-full flex flex-col justify-between overflow-hidden bg-theme-bg font-sans select-none transition-colors duration-300">
+    <main className="relative min-h-screen md:h-screen w-full flex flex-col justify-between md:overflow-hidden bg-theme-bg font-sans select-none transition-colors duration-300">
       
       {/* Background Image fixed layer */}
       {imageSrc && (
